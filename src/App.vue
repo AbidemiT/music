@@ -232,16 +232,31 @@
     </div>
   </div>
 
-  <app-auth />
+  <app-auth v-if="!userLoggedIn" />
 </template>
 
 <script>
+import { mapWritableState, mapState } from "pinia";
+import useUserStore from "@/stores/user";
+import { checkCurrentUser } from "./includes/firebase";
+
 import AppHeader from "@/components/AppHeader.vue";
 import AppAuth from "@/components/AppAuth.vue";
 export default {
   components: {
     AppHeader,
     AppAuth,
+  },
+  computed: {
+    ...mapWritableState(useUserStore, ["userLoggedIn"]),
+    ...mapState(useUserStore, ["userLoggedIn"]),
+  },
+  created() {
+    const user = checkCurrentUser();
+
+    if (user) {
+      this.userLoggedIn = true;
+    }
   },
 };
 </script>

@@ -5,14 +5,21 @@ import App from "./App.vue";
 import router from "./router";
 
 import VeeValidate from "./includes/validation";
+import { checkOnAuthStateChanged } from "./includes/firebase";
 
 import "./assets/base.css";
 import "./assets/main.css";
 
-const app = createApp(App);
+let app;
 
-app.use(createPinia());
-app.use(router);
-app.use(VeeValidate);
+checkOnAuthStateChanged(() => {
+  if (!app) {
+    app = createApp(App);
 
-app.mount("#app");
+    app.use(createPinia());
+    app.use(router);
+    app.use(VeeValidate);
+
+    app.mount("#app");
+  }
+});

@@ -9,12 +9,17 @@
         <!-- Primary Navigation -->
         <ul class="flex flex-row mt-1">
           <!-- Navigation Links -->
-          <li>
+          <li v-if="!userLoggedIn">
             <a class="px-2 text-white" href="#" @click.prevent="toggleAuthModal">Login / Register</a>
           </li>
-          <li>
-            <a class="px-2 text-white" href="#">Manage</a>
-          </li>
+          <template v-else>
+            <li>
+              <a class="px-2 text-white" href="#" @click.prevent="logOut">LogOut</a>
+            </li>
+            <li>
+              <a class="px-2 text-white" href="#">Manage</a>
+            </li>
+          </template>
         </ul>
       </div>
     </nav>
@@ -22,17 +27,27 @@
 </template>
 
 <script>
-import { mapStores } from "pinia";
+import { mapState, mapWritableState, mapActions } from "pinia";
 import useModalStore from "@/stores/modal";
+import useUserStore from "@/stores/user";
 
 export default {
   name: "AppHeader",
   computed: {
-    ...mapStores(useModalStore),
+    ...mapWritableState(useModalStore, ["isOpen"]),
+    ...mapState(useUserStore, ["userLoggedIn"]),
   },
   methods: {
     toggleAuthModal() {
-      this.modalStore.isOpen = !this.modalStore.isOpen;
+      this.isOpen = !this.isOpen;
+    },
+    ...mapActions(useUserStore, ["signOut"]),
+    async logOut() {
+      try {
+        await this.signOut();
+      } catch (error) {
+        console.log({ error });
+      }
     },
   },
 };

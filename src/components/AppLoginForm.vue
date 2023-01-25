@@ -28,6 +28,9 @@
 </template>
 
 <script>
+import { mapActions } from "pinia";
+import useUserStore from "@/stores/user";
+
 export default {
   name: "AppLoginForm",
   data() {
@@ -45,18 +48,38 @@ export default {
     };
   },
   methods: {
-    login(values) {
+    ...mapActions(useUserStore, {
+      loginUser: "login",
+    }),
+    async login(values) {
       this.log.log_show_alert = true;
       this.log.log_in_submission = true;
       this.log.log_alert_variant = "bg-blue-500";
       this.log.log_alert_msg = "logging in ...";
 
-      setTimeout(() => {
-        this.log.log_alert_variant = "bg-green-500";
-        this.log.log_alert_msg = "Success... Login successful";
-      }, 3000);
+      try {
+        await this.loginUser(values);
 
-      console.log({ values });
+        this.log.log_in_submission = false;
+        this.log.log_alert_variant = "bg-green-500";
+        this.log.log_alert_msg = "User logged In";
+      } catch (error) {
+        console.log({ error });
+        this.log.log_in_submission = false;
+        this.log.log_alert_variant = "bg-red-500";
+
+        if (error && error.code === "auth/wrong-password") {
+          this.log.log_alert_msg = "Email or Password Incorrect !!!";
+        } else {
+          this.log.log_alert_msg = "Error encountered";
+        }
+      }
+
+      setTimeout(() => {
+        this.log.log_show_alert = false;
+        this.log.log_alert_variant = null;
+        this.log.log_alert_msg = null;
+      }, 5000);
     },
   },
 };

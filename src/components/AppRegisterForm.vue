@@ -1,6 +1,7 @@
 <template>
   <!-- Registration Form -->
-  <div class="text-white text-center font-bold p-4 rounded" v-if="reg.reg_show_alert" :class="reg.reg_alert_variant">
+  <div class="text-white text-center font-bold p-4 rounded mb-4" v-if="reg.reg_show_alert"
+    :class="reg.reg_alert_variant">
     {{ reg.reg_alert_msg }}
   </div>
   <vee-form :validation-schema="regSchema" @submit="register" :initial-values="userData">
@@ -48,6 +49,17 @@
         placeholder="Confirm Password" />
       <error-message class="text-red-600" name="confirm_password" />
     </div>
+    <!-- Role -->
+    <div class="mb-3">
+      <label class="inline-block mb-2">Role</label>
+      <vee-field as="select" name="role"
+        class="block w-full py-1.5 px-3 text-gray-800 border border-gray-300 transition duration-500 focus:outline-none focus:border-black rounded">
+        <option value="artist">Artist</option>
+        <option value="Producer">Producer</option>
+        <option value="Manager">Manager</option>
+      </vee-field>
+      <error-message class="text-red-600" name="role" />
+    </div>
     <!-- Country -->
     <div class="mb-3">
       <label class="inline-block mb-2">Country</label>
@@ -74,6 +86,9 @@
 </template>
 
 <script>
+import { mapActions } from "pinia";
+import useUserStore from "../stores/user";
+
 export default {
   name: "AppRegisterForm",
   data() {
@@ -87,6 +102,7 @@ export default {
         age: "required|min_value:18|max_value:100",
         password: "required|min:9|max:100|excluded:password",
         confirm_password: "passwords_mismatch:@password",
+        role: "required",
         country: "required|country_excluded:Antartica",
         tos: "tos",
       },
@@ -99,19 +115,41 @@ export default {
     };
   },
   methods: {
-    register(values) {
+    ...mapActions(useUserStore, {
+      createUser: "register", // used alias, cause we have a function named register in our methods object already
+    }),
+    async register(values) {
       this.reg.reg_show_alert = true;
       this.reg.reg_in_submission = true;
       this.reg.reg_alert_variant = "bg-blue-500";
       this.reg.reg_alert_msg = "Please wait! Your account is being created.";
 
-      setTimeout(() => {
+      try {
+        await this.createUser(values);
+
+        this.reg.reg_in_submission = false;
         this.reg.reg_alert_variant = "bg-green-500";
         this.reg.reg_alert_msg =
-          "Success your account has been created successfully";
-      }, 3000);
+          "Success... Your account has being created successfully.";
+      } catch (error) {
+        this.reg.reg_in_submission = false;
+        this.reg.reg_alert_variant = "bg-red-500";
 
-      console.log({ values });
+        if (error && error.code === "auth/email-already-in-use") {
+          this.reg.reg_alert_msg = "Email Already Exist";
+        } else {
+          this.reg.reg_alert_msg =
+            "An unexpected error occured please try again later";
+        }
+
+        console.log({ error });
+      }
+
+      setTimeout(() => {
+        this.reg.reg_show_alert = false;
+        this.reg.reg_alert_variant = null;
+        this.reg.reg_alert_msg = null;
+      }, 5000);
     },
   },
 };
