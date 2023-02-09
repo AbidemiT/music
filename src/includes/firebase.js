@@ -19,6 +19,9 @@ import {
   where,
   updateDoc,
   deleteDoc,
+  limit,
+  orderBy,
+  startAfter,
 } from "firebase/firestore";
 import {
   getStorage,
@@ -117,7 +120,7 @@ export const createSongDocument = async (song) => {
 
   const createdAt = new Date();
 
-  const songDocRef = doc(db, "songs", `music_id-${createdAt.getTime()}`);
+  const songDocRef = doc(db, "songs", `song_id-${createdAt.getTime()}`);
 
   console.log({ songDocRef });
 
@@ -154,11 +157,47 @@ export const createSongDocument = async (song) => {
 
   return songDocRef;
 };
+export const createCommentDocument = async (comment) => {
+  if (!comment) return;
 
-export const customSnapshot = async (songDocRef) => {
-  if (!songDocRef) return;
+  const createdAt = new Date();
 
-  return await getDoc(songDocRef);
+  const commentDocRef = doc(
+    db,
+    "comments",
+    `comment_id-${createdAt.getTime()}`
+  );
+
+  console.log({ commentDocRef });
+
+  const songSnapshot = await getDoc(commentDocRef);
+  console.log({ songSnapshot });
+  console.log(songSnapshot.exists());
+
+  if (!songSnapshot.exists()) {
+    const { uid, content, datePosted, sid, name } = comment;
+
+    try {
+      await setDoc(commentDocRef, {
+        uid,
+        content,
+        datePosted,
+        sid,
+        name,
+        createdAt,
+      });
+    } catch (error) {
+      console.log("Error Creating Comment", error.message);
+    }
+  }
+
+  return commentDocRef;
+};
+
+export const customSnapshot = async (customDocRef) => {
+  if (!customDocRef) return;
+
+  return await getDoc(customDocRef);
 };
 
 export const createChildStorageRef = (child, file) => {
@@ -178,6 +217,21 @@ export const downloadUrl = async (uploadTask) => {
   return await getDownloadURL(uploadTask.snapshot.ref);
 };
 
+export const fetchSong = async (id) => {
+  if (!id) return;
+
+  const docRef = doc(db, "songs", id);
+  return await getDoc(docRef);
+
+  // if (docSnap.exists()) {
+  //   console.log("Document data:", docSnap.data());
+
+  // } else {
+  //   // doc.data() will be undefined in this case
+  //   console.log("No such document!");
+  // }
+};
+
 export const fetchSongs = async () => {
   const q = query(
     collection(db, "songs"),
@@ -187,6 +241,41 @@ export const fetchSongs = async () => {
   const querySnapshot = await getDocs(q);
 
   return querySnapshot;
+};
+
+export const fetchSongsWithLimitLatVisible = async (
+  limitValue,
+  songs,
+  lastVisibleValue
+) => {
+  if (!limitValue && lastVisibleValue) return;
+
+  const lastVisible = songs[songs.length - 1].docId;
+
+  // Construct a new query starting at this document,
+  // get the next 2 songs.
+  const next = query(
+    collection(db, "songs"),
+    orderBy("docId"),
+    startAfter(lastVisible),
+    limit(limitValue)
+  );
+  const snapshot = await getDocs(next);
+  return snapshot;
+};
+
+export const fetchSongsWithLimit = async (limitValue) => {
+  if (!limitValue) return;
+
+  const next = query(
+    collection(db, "songs"),
+    orderBy("docId"),
+    limit(limitValue)
+  );
+
+  const snapshot = await getDocs(next);
+
+  return snapshot;
 };
 
 export const updateSong = async (docId, editedData) => {
@@ -208,4 +297,27 @@ export const deleteSong = async (original_name, docId) => {
 
   // Delete the file
   return await deleteObject(songRef);
+};
+
+export const fetchComment = async (id) => {
+  if (!id) return;
+
+  const docRef = doc(db, "comments", id);
+  return await getDoc(docRef);
+
+  // if (docSnap.exists()) {
+  //   console.log("Document data:", docSnap.data());
+
+  // } else {
+  //   // doc.data() will be undefined in this case
+  //   console.log("No such document!");
+  // }
+};
+
+export const fetchComments = async (songId) => {
+  const q = query(collection(db, "comments"), where("sid", "==", songId));
+
+  const querySnapshot = await getDocs(q);
+
+  return querySnapshot;
 };
