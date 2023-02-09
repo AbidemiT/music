@@ -32,7 +32,7 @@ import {
 } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD7IDXjjV49EiGFyA4R48EauenyY0akcXs",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "music-855a3.firebaseapp.com",
   projectId: "music-855a3",
   storageBucket: "music-855a3.appspot.com",
